@@ -1,29 +1,36 @@
-import daemon
-import lockfile
-import signal
-
-from dispatch import (
-        initial_program_setup,
-        do_tweed_loop,
-        program_cleanup,
-        reload_program_config,
-        )
+import time
+from supay import Daemon
+from tweed import Tweed
 
 
-context = daemon.DaemonContext(
-        working_directory='./',
-        pidfile=lockfile.FileLock('./tweed.pid'),
-        )
+ 
+
+ def run():
+     initial_program_setup()
+     daemon = Daemon(name='tweed')
+     daemon.start()
+     while True:
+         do_tweed()
+         time.sleep(20)
+
+ def stop():
+     daemon.stop()
 
 
-context.signal_mnap = {
-        signal.SIGTERM: program_cleanup,
-        signal.SIGHUP: 'terminate',
-        signal.SIGUSR1: reload_program_config,
-        }
 
+def do_tweed_loop():
+    print "in loop"
+    tweed.close_friend_gap()
+    
 
-initial_program_setup()
+def initial_program_setup():
+    print "init"
+    global tweed 
+    tweed = Tweed()
 
-with context:
-    do_tweed_loop()
+def program_cleanup():
+    return
+    
+
+def reload_program_config():
+    return
