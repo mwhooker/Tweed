@@ -1,6 +1,7 @@
 import sys
 import twitter
 import logging
+import ConfigParser
 
 
 class Tweed:
@@ -10,7 +11,16 @@ class Tweed:
         self.log = logging.getLogger('tweed')
         self.log.info("init")
 
-        self.api_handle = twitter.Api(username="tweediebot", password="NasP&8Eceh")
+        config = ConfigParser.SafeConfigParser()
+        try:
+            config.read('config.cfg')
+        except config.ParsingError:
+            self.log.error("uh oh parsing error!")
+
+        self.api_handle = twitter.Api(
+                username=config.get('Twitter User', 'screen_name'), 
+                password=config.get('Twitter User', 'password')
+                )
 
     def close_friend_gap(self):
         friends = set([i.id for i in self.api_handle.GetFriends()])
