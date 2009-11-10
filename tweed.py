@@ -1,3 +1,4 @@
+import sys
 import twitter
 import logging
 
@@ -5,21 +6,22 @@ import logging
 class Tweed:
 
     def __init__(self):
+        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
         self.log = logging.getLogger('tweed')
-        logging.basicConfig()
-        self.api_handle = twitter.Api(username="tweediebot", password="NasP&8Eceh")
         self.log.info("init")
 
+        self.api_handle = twitter.Api(username="tweediebot", password="NasP&8Eceh")
+
     def close_friend_gap(self):
-        friends = set(self.api_handle.GetFriends())
-        followers = set(self.api_handle.GetFollowers())
+        friends = set([i.id for i in self.api_handle.GetFriends()])
+        followers = set([i.id for i in self.api_handle.GetFollowers()])
 
         to_follow = followers.difference(friends)
 
-        if to_follow == True:
-            self.log.info('found ' + len(to_follow) + ' people to follow')
+        if to_follow:
+            self.log.info('found %d people to follow', len(to_follow))
             for i in to_follow:
-                self.log.info('following ' + i.screen_name);
+                self.log.info('following %s', i.screen_name)
                 self.api_handle.CreateFriendship(i.id)
 
 
