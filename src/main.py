@@ -1,4 +1,7 @@
+import sys
+import os
 import time
+#import database
 from supay import Daemon
 from tweed import Tweed
 
@@ -15,10 +18,12 @@ def stop():
 def do_tweed_loop():
     while True:
         tweed.close_friend_gap()
+        tweed.get_feed_requests()
         time.sleep(20)
 
 
 def initial_program_setup():
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/conf')
     global tweed 
     tweed = Tweed()
 

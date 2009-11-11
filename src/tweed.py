@@ -2,6 +2,7 @@ import sys
 import twitter
 import logging
 import ConfigParser
+from urlextract import UrlExtractor
 
 
 class Tweed:
@@ -13,18 +14,18 @@ class Tweed:
 
         config = ConfigParser.SafeConfigParser()
         try:
-            config.read('config.cfg')
+            config.read('../conf/config.cfg')
         except config.ParsingError:
             self.log.error("uh oh parsing error!")
 
-        self.api_handle = twitter.Api(
+        self.twitter = twitter.Api(
                 username=config.get('Twitter User', 'screen_name'), 
                 password=config.get('Twitter User', 'password')
                 )
 
     def close_friend_gap(self):
-        friends = set([i.id for i in self.api_handle.GetFriends()])
-        followers = set([i.id for i in self.api_handle.GetFollowers()])
+        friends = set([i.id for i in self.twitter.GetFriends()])
+        followers = set([i.id for i in self.twitter.GetFollowers()])
 
         to_follow = followers.difference(friends)
 
@@ -32,7 +33,13 @@ class Tweed:
             self.log.info('found %d people to follow', len(to_follow))
             for i in to_follow:
                 self.log.info('following %s', i.screen_name)
-                self.api_handle.CreateFriendship(i.id)
+                self.twitter.CreateFriendship(i.id)
 
+    def get_feed_requests(self, since_id=None):
+        requests = self.twitter.GetDirectMessages(since_id=since_id)
 
-
+        if requests:
+            valid_requests = [i for i in requests if UrlExtractor(i.text).hasUrl()]
+            self.log.info('found %d new feed requests', len(valid_requests))
+            for i in valid_requests:
+                print i
