@@ -2,6 +2,7 @@ import sys
 import twitter
 import logging
 import ConfigParser
+from feed import Feed
 from urlextract import UrlExtractor
 
 
@@ -41,5 +42,14 @@ class Tweed:
         if requests:
             valid_requests = [i for i in requests if UrlExtractor(i.text).hasUrl()]
             self.log.info('found %d new feed requests', len(valid_requests))
+            dms = []
             for i in valid_requests:
-                print i
+                self.log.info('got dm from %s', i.sender_screen_name)
+                dm = Feed(
+                        i.id, i.sender_id, i.created_at_in_seconds,
+                        UrlExtractor(i.text).urlList()[0]
+                        )
+                dms.append(dm)
+
+        return dms if dms else None
+
