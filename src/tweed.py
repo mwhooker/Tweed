@@ -39,10 +39,10 @@ class Tweed:
     def get_feed_requests(self, since_id=None):
         requests = self.twitter.GetDirectMessages(since_id=since_id)
 
+        dms = []
         if requests:
             valid_requests = [i for i in requests if UrlExtractor(i.text).hasUrl()]
             self.log.info('found %d new feed requests', len(valid_requests))
-            dms = []
             for i in valid_requests:
                 self.log.info('got dm from %s', i.sender_screen_name)
                 dm = Feed(

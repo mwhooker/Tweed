@@ -1,4 +1,3 @@
-from sqlite3 import dbapi2 as sqlite
 import sys
 import os
 import time
@@ -12,25 +11,24 @@ from feed import Feed
 class DatabaseHandle:
 
     def __init__(self):
-        engine = create_engine('sqlite:///file.db', module=sqlite, echo=True)
+        engine = create_engine('sqlite://', echo=True)
         Feed.metadata.create_all(engine)
-        self.session = create_session(bind=engine, autocommit=True)
+        self.session = create_session(bind=engine, autocommit=True, autoflush=True)
         self.log = logging.getLogger('db')
 
     def last_processed_feed(self):
         qry = self.session.query(Feed.twitter_dm_id).order_by(Feed.created_at_in_seconds)
         if qry.count() > 0:
-            last_id = qry.first()
-            self.log.info('last processed id was: %d', last_id.twitter_dm_id)
+            last_id = qry.first().twitter_dm_id
+            self.log.info('last processed id was: %d', last_id)
             return last_id
 
 
     def process_feeds(self, feeds):
+        assert feeds
         self.log.info('processing %d feeds into db', len(feeds)) 
-        print feeds
         self.session.add_all(feeds)
-        print self.last_processed_feed()
-
+        #self.session.flush()
 
 
 def run():
@@ -49,9 +47,9 @@ def do_tweed_loop():
     while True:
         tweed.close_friend_gap()
         last_dm = db.last_processed_feed()
-        print "last dm is %s" % last_dm
         feeds = tweed.get_feed_requests(last_dm)
-        db.process_feeds(feeds)
+        if feeds:
+            db.process_feeds(feeds)
 
         time.sleep(20)
 
