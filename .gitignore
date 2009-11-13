@@ -1,4 +1,4 @@
 .*.swp
 *.pyc
 config.cfg
-feed.db
+*.db
