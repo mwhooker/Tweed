@@ -13,13 +13,14 @@ class Feed(Base):
     twitter_dm_id = Column(Integer)
     created_at_in_seconds = Column(Integer)
     processed_date = Column(sqlite.SLDateTime)
+    feed_title = Column(String)
 
     def __init__(self, twitter_dm_id, twitter_id, created_at_in_seconds, url):
         self.created_at_in_seconds = created_at_in_seconds
         self.twitter_dm_id = twitter_dm_id
         self.twitter_user_id = twitter_id
         self.url = url
-        self.processed_date = datetime.datetime.now() - datetime.timedelta(days=1)
+        self.processed_date = datetime.datetime.now()
         #self.date_received = 
 
     def __repr__(self):

@@ -58,7 +58,7 @@ def do_tweed_loop():
             db_session.begin()
             i.processed_date = datetime.now()
             try:
-                tweed.notify_followers(i.twitter_user_id, entries)
+                tweed.notify_followers(i.twitter_user_id, entries, i.feed_title)
             except Exception as e:
                 log.error(e)
                 db_session.rollback()

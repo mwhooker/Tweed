@@ -4,6 +4,7 @@ import logging
 import ConfigParser
 from feed import Feed
 from urlextract import UrlExtractor
+from bitly import bitly
 
 
 class Tweed:
@@ -53,8 +54,15 @@ class Tweed:
 
         return dms if dms else None
 
-    def notify_followers(self, user_id, posts):
+    def notify_followers(self, user_id, posts, feed_title=''):
         for i in posts:
             self.log.info( "notifying %d of post %s", user_id, i.title)
+            url = bitly.shorten(i.link)
+
+            if feed_title:
+                feed_title = " from \"%s\"" % (feed_title)
+
+            message = "new post%s: %s \"%s\"" % (feed_title, url, i.title)[0:140]
+            self.twitter.PostDirectMessage(user_id, message)
 
 
