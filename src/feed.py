@@ -2,6 +2,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.databases import sqlite
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
 import datetime
+import time
 
 Base = declarative_base()
 class Feed(Base):
@@ -12,7 +13,7 @@ class Feed(Base):
     url = Column(String)
     twitter_dm_id = Column(Integer)
     created_at_in_seconds = Column(Integer)
-    processed_date = Column(sqlite.SLDateTime)
+    processed_date = Column(Integer)
     feed_title = Column(String)
 
     def __init__(self, twitter_dm_id, twitter_id, created_at_in_seconds, url):
@@ -20,7 +21,7 @@ class Feed(Base):
         self.twitter_dm_id = twitter_dm_id
         self.twitter_user_id = twitter_id
         self.url = url
-        self.processed_date = datetime.datetime.now()
+        self.processed_date = time.time()
         #self.date_received = 
 
     def __repr__(self):

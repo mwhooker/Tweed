@@ -1,4 +1,3 @@
-import ConfigParser
 import json
 import restclient
 
@@ -26,17 +25,3 @@ class Bitly:
         return res['results'][url]['shortUrl']
 
         
-
-
-
-config = ConfigParser.SafeConfigParser()
-try:
-    config.read('../conf/config.cfg')
-except config.ParsingError as e:
-    print e
-    pass
-
-bitly = Bitly(
-        config.get('bitly', 'login'),
-        config.get('bitly', 'apiKey')
-        )

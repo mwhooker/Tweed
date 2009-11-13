@@ -1,29 +1,15 @@
 import sys
-import twitter
 import logging
-import ConfigParser
 from feed import Feed
 from urlextract import UrlExtractor
-from bitly import bitly
 
 
 class Tweed:
 
-    def __init__(self):
-        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    def __init__(self, twitterApi, urlshortener):
+        self.urlshortener = urlshortener
+        self.twitter = twitterApi
         self.log = logging.getLogger('tweed')
-        self.log.info("init")
-
-        config = ConfigParser.SafeConfigParser()
-        try:
-            config.read('../conf/config.cfg')
-        except config.ParsingError:
-            self.log.error("uh oh parsing error!")
-
-        self.twitter = twitter.Api(
-                username=config.get('Twitter User', 'screen_name'), 
-                password=config.get('Twitter User', 'password')
-                )
 
     def close_friend_gap(self):
         friends = set([i.id for i in self.twitter.GetFriends()])
@@ -57,12 +43,13 @@ class Tweed:
     def notify_followers(self, user_id, posts, feed_title=''):
         for i in posts:
             self.log.info( "notifying %d of post %s", user_id, i.title)
-            url = bitly.shorten(i.link)
+            url = self.urlshortener.shorten(i.link)
 
             if feed_title:
-                feed_title = " from \"%s\"" % (feed_title)
+                title = " from \"%s\"" % (feed_title)
 
-            message = "new post%s: %s \"%s\"" % (feed_title, url, i.title)[0:140]
-            self.twitter.PostDirectMessage(user_id, message)
+            message = "new post%s: %s \"%s\"" % (title, url, i.title)[0:140]
+            #self.twitter.PostDirectMessage(user_id, message)
+            self.log.info(message)
 
 

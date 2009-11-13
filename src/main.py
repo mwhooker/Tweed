@@ -2,27 +2,37 @@ import sys
 import os
 import time
 import logging
-from supay import Daemon
-from tweed import Tweed
+import tweed
+import ConfigParser
 from feed import Feed
 import feedmonitor
 from databasehandle import Session
 from datetime import datetime
+from bitly import Bitly
+import twitter
+from tweed import Tweed
 
-def run():
-    initial_program_setup()
-    daemon = Daemon(name='tweed')
-    daemon.start()
-    do_tweed_loop()
-
-def stop():
-    daemon.stop()
-
-
-def do_tweed_loop():
-    db_session = Session()
-    tweed = Tweed()
+def __main__():
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/conf')
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     log = logging.getLogger("Main")
+    config = ConfigParser.SafeConfigParser()
+    try:
+        config.read('../conf/config.cfg')
+    except config.ParsingError as e:
+        logging.error("uh oh parsing error: %s", e)
+
+    twitterApi = twitter.Api(
+            username=config.get('Twitter User', 'screen_name'), 
+            password=config.get('Twitter User', 'password')
+            )
+    bitly = Bitly(
+            config.get('bitly', 'login'),
+            config.get('bitly', 'apiKey')
+            )
+    tweed = Tweed(twitterApi, bitly)
+
+    db_session = Session()
     while True:
         tweed.close_friend_gap()
 
@@ -55,6 +65,10 @@ def do_tweed_loop():
             if entries == None:
                 continue;
 
+            for e in entries:
+                log.debug("date for feed %s: %s", e.title, e.updated_parsed)
+                log.debug("last update for feed: %s", time.gmtime(i.processed_date))
+
             db_session.begin()
             i.processed_date = datetime.now()
             try:
@@ -71,17 +85,6 @@ def do_tweed_loop():
         time.sleep(20)
 
 
-def initial_program_setup():
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/conf')
-
-def program_cleanup():
-    return
-
-
-def reload_program_config():
-    return
-
 
 if __name__ == '__main__':
-    initial_program_setup()
-    do_tweed_loop()
+    __main__()
