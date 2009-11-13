@@ -53,3 +53,8 @@ class Tweed:
 
         return dms if dms else None
 
+    def notify_followers(self, user_id, posts):
+        for i in posts:
+            self.log.info( "notifying %d of post %s", user_id, i.title)
+
+

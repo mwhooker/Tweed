@@ -4,32 +4,10 @@ import time
 import logging
 from supay import Daemon
 from tweed import Tweed
-from sqlalchemy import create_engine
-from sqlalchemy.orm import create_session
 from feed import Feed
-
-class DatabaseHandle:
-
-    def __init__(self):
-        engine = create_engine('sqlite://', echo=True)
-        Feed.metadata.create_all(engine)
-        self.session = create_session(bind=engine, autocommit=True, autoflush=True)
-        self.log = logging.getLogger('db')
-
-    def last_processed_feed(self):
-        qry = self.session.query(Feed.twitter_dm_id).order_by(Feed.created_at_in_seconds)
-        if qry.count() > 0:
-            last_id = qry.first().twitter_dm_id
-            self.log.info('last processed id was: %d', last_id)
-            return last_id
-
-
-    def process_feeds(self, feeds):
-        assert feeds
-        self.log.info('processing %d feeds into db', len(feeds)) 
-        self.session.add_all(feeds)
-        #self.session.flush()
-
+import feedmonitor
+from databasehandle import Session
+from datetime import datetime
 
 def run():
     initial_program_setup()
@@ -42,15 +20,54 @@ def stop():
 
 
 def do_tweed_loop():
-    db = DatabaseHandle()
+    db_session = Session()
     tweed = Tweed()
+    log = logging.getLogger("Main")
     while True:
         tweed.close_friend_gap()
-        last_dm = db.last_processed_feed()
-        feeds = tweed.get_feed_requests(last_dm)
-        if feeds:
-            db.process_feeds(feeds)
 
+        #see if anyone has sent any new feeds
+        last_dm_qry = db_session.query(Feed.twitter_dm_id).order_by(Feed.created_at_in_seconds)
+
+        if last_dm_qry.count():
+            last_dm = last_dm_qry.first().twitter_dm_id 
+            log.info('last processed id was: %d', last_dm)
+        else:
+            last_dm = None
+
+        new_feeds = tweed.get_feed_requests(last_dm)
+
+        if new_feeds:
+            db_session.add_all(new_feeds)
+            log.info('processing %d feeds into db', len(new_feeds)) 
+
+
+        #process new feed entries
+        current_feeds = db_session.query(Feed).all()
+        for i in current_feeds:
+            try:
+                entries = feedmonitor.find_new_entries(i)
+            except feedmonitor.NotValidFeed as e:
+                log.error(e)
+                #if we can't use this feed, delete it
+                db_session.delete(i)
+
+            if entries == None:
+                continue;
+
+            db_session.begin()
+            i.processed_date = datetime.now()
+            try:
+                tweed.notify_followers(i.twitter_user_id, entries)
+            except Exception as e:
+                log.error(e)
+                db_session.rollback()
+            db_session.commit()
+
+            del entries
+
+
+        
         time.sleep(20)
 
 
