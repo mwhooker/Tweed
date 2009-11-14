@@ -5,20 +5,59 @@ import datetime, time
 class NotValidFeed(Exception):
     pass
 
-def find_new_entries(feedObj):
-    d = feedparser.parse(feedObj.url)
+class FeedMonitor(object):
 
-    if feedObj.feed_title != d.feed.title:
-        feedObj.feed_title = d.feed.title
+    updated = False
+    new_entries = None
 
-    e = d.entries
-    #not comparing correctly
-#    new_entries = [i for i in e if 
- #       feedObj.processed_date < datetime.datetime.fromtimestamp(time.mktime(i.updated_parsed))]
-    new_entries = [i for i in e if 
-        time.gmtime(feedObj.processed_date) < i.updated_parsed]
+    def __init__(self, url):
+        self.url = url 
+        if cache.valid(url):
+            return
 
-    logging.info("found %d new feeds to process", len(new_entries))
+        self.updated = True
+
+        feed = feedparser.parse(url)
+        cache.set(url, feed)
+
+        self.title = feed.feed.title
+        self.last_modified_date = feed.feed.updated_parsed
 
 
-    return new_entries
+    def getEntries(self,since):
+        if self.updated == False:
+            return None
+    
+        feed = cache.get(self.url)
+        e = feed.entries
+
+        new_entries = [i for i in e if time.gmtime(since) < self.last_modified_date]
+        logging.info("found %d new posts to process", len(new_entries))
+
+        return new_entries
+
+class FeedCache(object):
+    
+    def __init__(self):
+        self.cache = {}
+
+    def valid(self,url):
+        if url in self.cache:
+            feed = feedparser.parse(url, 
+                    modified=self.cache[url].modified, 
+                    etag=self.cache[url].etag
+                    )
+            if feed.status == 304:
+                return True
+
+        return False 
+
+
+    def set(self,url, feedObj):
+        self.cache[url] = feedObj
+
+    def get(self,url):
+        return self.cache[url]
+
+
+cache = FeedCache()

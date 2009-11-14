@@ -14,7 +14,6 @@ class Feed(Base):
     twitter_dm_id = Column(Integer)
     created_at_in_seconds = Column(Integer)
     processed_date = Column(Integer)
-    feed_title = Column(String)
 
     def __init__(self, twitter_dm_id, twitter_id, created_at_in_seconds, url):
         self.created_at_in_seconds = created_at_in_seconds

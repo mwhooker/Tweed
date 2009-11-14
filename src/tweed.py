@@ -49,7 +49,7 @@ class Tweed:
                 title = " from \"%s\"" % (feed_title)
 
             message = "new post%s: %s \"%s\"" % (title, url, i.title)[0:140]
-            #self.twitter.PostDirectMessage(user_id, message)
-            self.log.info(message)
+#            self.twitter.PostDirectMessage(user_id, message)
+            #self.log.info(message)
 
 
