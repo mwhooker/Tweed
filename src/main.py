@@ -12,13 +12,15 @@ from bitly import Bitly
 import twitter
 from tweed import Tweed
 
+CONFIG_PATH = os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))) + '/conf'
+
 def __main__():
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/conf')
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger("Main")
     config = ConfigParser.SafeConfigParser()
     try:
-        config.read('../conf/config.cfg')
+        config.read(CONFIG_PATH + '/config.cfg')
     except config.ParsingError as e:
         logging.error("uh oh parsing error: %s", e)
 
@@ -37,7 +39,8 @@ def __main__():
         tweed.close_friend_gap()
 
         #see if anyone has sent any new feeds
-        last_dm_qry = db_session.query(Feed.twitter_dm_id).order_by(Feed.twitter_dm_id.desc())
+        last_dm_qry = db_session.query(Feed.twitter_dm_id).order_by(
+                Feed.twitter_dm_id.desc())
 
         if last_dm_qry.count():
             last_dm = last_dm_qry.first().twitter_dm_id 
@@ -63,19 +66,20 @@ def __main__():
                 #if we can't use this feed, delete it
                 db_session.delete(i)
                 continue
+            except Exception as e:
+                log.error(e)
+                continue
 
             if feed.updated == False:
                 continue;
-
-            if i.feed_title != feed.title:
-                i.feed_title = feed.title
 
             entries = feed.getEntries(i.processed_date)
 
             db_session.begin()
             i.processed_date = feed.last_modified_date
             try:
-                tweed.notify_followers(i.twitter_user_id, entries, i.feed_title)
+                tweed.notify_followers(
+                        i.twitter_user_id, entries, feed.title)
             except Exception as e:
                 log.error(e)
                 db_session.rollback()

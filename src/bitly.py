@@ -11,11 +11,13 @@ class Bitly:
         self.login=login
         self.apiKey=apiKey
 
-        self.stdParams = "?version=%s&login=%s&apiKey=%s" % (self.version, self.login, self.apiKey)
+        self.stdParams = "?version=%s&login=%s&apiKey=%s" % (
+                self.version, self.login, self.apiKey)
 
     def shorten(self, url):
         '''
-        http://api.bit.ly/shorten?version=2.0.1&longUrl=http://cnn.com&login=bitlyapidemo&apiKey=R_0da49e0a9118ff35f52f629d2d71bf07
+        http://api.bit.ly/shorten
+            ?version=2.0.1&longUrl=<url>&login=<login>&apiKey=<api key>
         '''
         endpoint = "%s/shorten%s&longUrl=%s" % (self.base_url, self.stdParams, url)
         res = json.loads(restclient.GET(endpoint, async=False))
