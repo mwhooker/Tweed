@@ -29,3 +29,5 @@ class TestFeedCache(unittest.TestCase):
         self.assertFalse(cache304.valid(self.url))
 
 
+class TestFeedMonitor(unittest.TestCase):
+    pass
