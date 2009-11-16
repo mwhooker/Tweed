@@ -52,6 +52,11 @@ class FeedMonitor(object):
         if len(feedObj.entries) < 1:
             raise NoEntries
 
+        feedObj.entries.sort(
+                key=lambda x: x['updated_parsed'], 
+                reverse=True
+                )
+
         last_entry = feedObj.entries[0]
         if last_entry.has_key('updated_parsed'):
             return last_entry.updated_parsed
@@ -64,12 +69,13 @@ class FeedMonitor(object):
 
 class FeedCache(object):
     
-    def __init__(self):
+    def __init__(self, fp):
         self.cache = {}
+        self.feedparser = fp
 
     def valid(self,url):
         if url in self.cache:
-            feed = feedparser.parse(url, 
+            feed = self.feedparser.parse(url, 
                     modified=self.cache[url].modified, 
                     etag=self.cache[url].etag
                     )
@@ -85,5 +91,8 @@ class FeedCache(object):
     def get(self,url):
         return self.cache[url]
 
+    def remove(self, url):
+        del self.cache[url]
 
-cache = FeedCache()
+
+cache = FeedCache(feedparser)

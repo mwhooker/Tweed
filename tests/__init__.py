@@ -1,9 +1,12 @@
-import unittest
+import unittest, re, os
 
 def get_tests():
     loader = unittest.TestLoader()
 
-    return loader.loadTestsFromName('urlextractor')
+    names = [i[0:-3] for i in os.listdir(
+        os.path.dirname(os.path.abspath(__file__))) 
+        if re.match('^test.+\.py$', i)]
+    return loader.loadTestsFromNames(names)
 
 def main():
     suite = get_tests()

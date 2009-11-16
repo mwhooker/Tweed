@@ -5,13 +5,15 @@ from urlextract import UrlExtractor
 
 
 class Tweed:
+    '''Main mediator between twitter and the application'''
 
-    def __init__(self, twitterApi, urlshortener):
-        self.urlshortener = urlshortener
+    def __init__(self, twitterApi, urlShortener):
+        self.urlShortener = urlShortener
         self.twitter = twitterApi
         self.log = logging.getLogger('tweed')
 
     def close_friend_gap(self):
+        '''Make sure Tweed follows everyone that follows Tweed'''
 	twit_followers = self.twitter.GetFollowers()
         friends = set([i.id for i in self.twitter.GetFriends()])
         followers = set([i.id for i in twit_followers])
@@ -27,6 +29,8 @@ class Tweed:
                 self.twitter.CreateFriendship(i.id)
 
     def get_feed_requests(self, since_id=None):
+        '''Have any new people requested Tweed follow a feed?
+        If so, return a list of Feed objects'''
         requests = self.twitter.GetDirectMessages(since_id=since_id)
 
         dms = []
@@ -46,12 +50,12 @@ class Tweed:
     def notify_followers(self, user_id, posts, feed_title=''):
         for i in posts:
             self.log.info( "notifying %d of post %s", user_id, i.title)
-            url = self.urlshortener.shorten(i.link)
+            url = self.urlShortener.shorten(i.link)
 
             if feed_title:
                 title = " from \"%s\"" % (feed_title)
 
             message = "new post%s: %s \"%s\"" % (title, url, i.title)[0:140]
-            self.twitter.PostDirectMessage(user_id, message)
+            #self.twitter.PostDirectMessage(user_id, message)
 
 

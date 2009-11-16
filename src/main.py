@@ -75,6 +75,9 @@ def __main__():
 
             entries = feed.getEntries(i.processed_date)
 
+            log.info("%s updated with %d new entries", 
+                    feed.title, len(entries))
+
             db_session.begin()
             i.processed_date = feed.last_modified_date
             try:
