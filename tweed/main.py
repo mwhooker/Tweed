@@ -108,7 +108,7 @@ def __main__():
 
 
 
-#patch twitter API with rape_limit_status method
+#patch twitter API with rate_limit_status method
 def rate_limit_status(self):
     url = 'http://twitter.com/account/rate_limit_status.json'
     json = self._FetchUrl(url)
