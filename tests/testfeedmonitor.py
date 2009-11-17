@@ -1,33 +1,51 @@
-import unittest
-from mock import Mock
-from feedmonitor import *
+import unittest, os
+from mock import Mock, patch
+import feedmonitor
+import time
 
 
 class TestFeedCache(unittest.TestCase):
-    mockfeed = Mock()
     url = 'http://example.net'
     
     def setUp(self):
+        self.mockfeed = Mock()
         self.mockfeed.modified = 'xxx'
         self.mockfeed.etag = 'yyy'
 
 
     def testValidity200(self):
-        mockfeedparser = Mock()
-        mockfeedparser.parser.status.return_value = 200
-        cache200 = FeedCache(mockfeedparser)
-        cache200.set(self.url, self.mockfeed)
-
-        self.assertFalse(cache200.valid(self.url))
+        self.mockfeed.status=200
+        with patch('feedmonitor.feedparser.parse') as MockParse:
+            MockParse.return_value = self.mockfeed
+            feedmonitor.cache.set(self.url, self.mockfeed)
+            self.assertFalse(feedmonitor.cache.valid(self.url))
 
     def testValidity304(self):
-        mockfeedparser = Mock()
-        mockfeedparser.parser.status.return_value = 304
-        cache304 = FeedCache(mockfeedparser)
-        cache304.set(self.url, self.mockfeed)
+        self.mockfeed.status=304
+        with patch('feedmonitor.feedparser.parse') as MockParse:
+            MockParse.return_value = self.mockfeed
+            feedmonitor.cache.set(self.url, self.mockfeed)
+            self.assert_(feedmonitor.cache.valid(self.url))
 
-        self.assertFalse(cache304.valid(self.url))
+    def testCaching(self):
+        '''make sure feedparser is taken from cache the second time'''
+        with patch('feedmonitor.feedparser.parse') as MockParse:
+            self.mockfeed.feed.title = 'title'
+            self.mockfeed.status = 304
+            MockParse.return_value = self.mockfeed
+
+            lhs = feedmonitor.FeedMonitor(self.url)
+            self.assertEqual(MockParse.call_args, ((self.url,), {}))
+            rhs = feedmonitor.FeedMonitor(self.url)
+            self.assertEqual(MockParse.call_args, ((self.url,), {'etag': 'yyy', 'modified': 'xxx'}))
+
+
 
 
 class TestFeedMonitor(unittest.TestCase):
-    pass
+    fixture_path = os.path.dirname(os.path.abspath(__file__)) + '/fixtures'
+
+    def testGetEntries(self):
+        feed = feedmonitor.FeedMonitor(self.fixture_path + '/3item.xml') 
+        since = time.strptime("01 Aug 2006", "%d %b %Y")
+        self.assertEquals(len(feed.getEntries(since)), 2)

@@ -2,26 +2,25 @@ import feedparser
 import logging
 import datetime, time
 
-class NotValidFeed(Exception):
-    pass
-
-class NoEntries(Exception):
-    pass
+class NotValidFeed(Exception): pass
+class NoEntries(Exception): pass
 
 class FeedMonitor(object):
+    '''perform date-range queries on RSS/ATOM feeds'''
+
 
     updated = False
     new_entries = None
 
-    def __init__(self, url):
-        self.url = url 
-        if cache.valid(url):
+    def __init__(self, uri):
+        self.uri = uri 
+        if cache.valid(uri):
             return
 
         self.updated = True
 
-        feed = feedparser.parse(url)
-        cache.set(url, feed)
+        feed = feedparser.parse(uri)
+        cache.set(uri, feed)
 
         self.title = feed.feed.title
         self.last_modified_date = self.findLastModifiedDate(feed)
@@ -30,8 +29,11 @@ class FeedMonitor(object):
     def getEntries(self,since):
         if self.updated == False:
             return None
+
+        if type(since) != time.struct_time:
+            raise TypeError
     
-        feed = cache.get(self.url)
+        feed = cache.get(self.uri)
         
         if len(feed.entries) < 1:
             raise NoEntries
@@ -39,15 +41,15 @@ class FeedMonitor(object):
         e = feed.entries
 
         new_entries = [i for i in e if since < 
-                self.last_modified_date]
+                i.updated_parsed]
 
         logging.info("found %d new posts to process", len(new_entries))
 
         return new_entries
 
     def findLastModifiedDate(self, feedObj):
-        if feedObj.has_key('updated_parsed'):
-            return feedObj.updated_parsed
+        if feedObj.has_key('updated'):
+            return feedObj.updated
 
         if len(feedObj.entries) < 1:
             raise NoEntries
@@ -67,17 +69,22 @@ class FeedMonitor(object):
 
             
 
-class FeedCache(object):
-    
-    def __init__(self, fp):
-        self.cache = {}
-        self.feedparser = fp
 
-    def valid(self,url):
-        if url in self.cache:
-            feed = self.feedparser.parse(url, 
-                    modified=self.cache[url].modified, 
-                    etag=self.cache[url].etag
+class FeedCache(object):
+    '''cache feedparse object, respecting remote servers' 
+    etag/last-modified headers'''
+    
+    def __init__(self):
+        self.cache = {}
+
+    def valid(self,uri):
+        '''is the feedparser handle still valid, or has the resource
+        been modified?'''
+
+        if uri in self.cache:
+            feed = feedparser.parse(uri, 
+                    modified=self.cache[uri].modified, 
+                    etag=self.cache[uri].etag
                     )
             if feed.status == 304:
                 return True
@@ -85,14 +92,15 @@ class FeedCache(object):
         return False 
 
 
-    def set(self,url, feedObj):
-        self.cache[url] = feedObj
+    def set(self,uri, feedObj):
+        self.cache[uri] = feedObj
 
-    def get(self,url):
-        return self.cache[url]
+    def get(self,uri):
+        return self.cache[uri]
 
-    def remove(self, url):
-        del self.cache[url]
+    def remove(self, uri):
+        del self.cache[uri]
 
 
-cache = FeedCache(feedparser)
+
+cache = FeedCache()
