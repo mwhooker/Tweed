@@ -7,31 +7,41 @@ from urlextract import UrlExtractor
 class Tweed:
     '''Main mediator between twitter and the application'''
 
+    TWITTER_SOURCE = "Tweed"
+
     def __init__(self, twitterApi, urlShortener):
         self.urlShortener = urlShortener
         self.twitter = twitterApi
+        self.twitter.SetSource(self.TWITTER_SOURCE)
         self.log = logging.getLogger('tweed')
 
     def close_friend_gap(self):
         '''Make sure Tweed follows everyone that follows Tweed'''
-	twit_followers = self.twitter.GetFollowers()
-        friends = set([i.id for i in self.twitter.GetFriends()])
-        followers = set([i.id for i in twit_followers])
+        try:
+            twit_followers = self.twitter.GetFollowers()
+            friends = set([i.id for i in self.twitter.GetFriends()])
+            followers = set([i.id for i in twit_followers])
 
-        diff_ids = followers.difference(friends)
-	to_follow = [i for i in twit_followers if i.id in diff_ids]
+            diff_ids = followers.difference(friends)
+            to_follow = [i for i in twit_followers if i.id in diff_ids]
 
 
-        if to_follow:
-            self.log.info('found %d people to follow', len(to_follow))
-            for i in to_follow:
-                self.log.info('following %s', i.screen_name)
-                self.twitter.CreateFriendship(i.id)
+            if to_follow:
+                self.log.info('found %d people to follow', len(to_follow))
+                for i in to_follow:
+                    self.log.info('following %s', i.screen_name)
+                    self.twitter.CreateFriendship(i.id)
+        except Exception as e:
+            self.log.error(e)
 
     def get_feed_requests(self, since_id=None):
         '''Have any new people requested Tweed follow a feed?
         If so, return a list of Feed objects'''
-        requests = self.twitter.GetDirectMessages(since_id=since_id)
+        try:
+            requests = self.twitter.GetDirectMessages(since_id=since_id)
+        except Exception as e:
+            self.log.error(e)
+            return None
 
         dms = []
         if requests:

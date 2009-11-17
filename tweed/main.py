@@ -9,8 +9,14 @@ import feedmonitor
 from databasehandle import Session
 from datetime import datetime
 from bitly import Bitly
-import twitter
+import twitter, simplejson
 from tweed import Tweed
+
+#incase twitter goes does. as suggested here:
+#http://code.google.com/p/python-twitter/issues/detail?id=92
+import socket
+socket.setdefaulttimeout(60)
+
 
 CONFIG_PATH = os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))) + '/conf'
@@ -35,8 +41,16 @@ def __main__():
     tweed = Tweed(twitterApi, bitly)
 
     db_session = Session()
-    while True:
+
+    Continue = True
+    while Continue:
+
         tweed.close_friend_gap()
+        try:
+            log.debug("API calls left: %d", 
+                tweed.twitter.RateLimitStatus()['remaining_hits'])
+        except Exception as e:
+            log.error(e)
 
         #see if anyone has sent any new feeds
         last_dm_qry = db_session.query(Feed.twitter_dm_id).order_by(
@@ -90,11 +104,19 @@ def __main__():
 
             del entries
 
-
-        
         time.sleep(120)
 
 
+
+#patch twitter API with rape_limit_status method
+def rate_limit_status(self):
+    url = 'http://twitter.com/account/rate_limit_status.json'
+    json = self._FetchUrl(url)
+    data = simplejson.loads(json)
+    self._CheckForTwitterError(data)
+    return data
+
+twitter.Api.RateLimitStatus = rate_limit_status
 
 if __name__ == '__main__':
     __main__()
