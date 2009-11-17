@@ -82,10 +82,18 @@ class FeedCache(object):
         been modified?'''
 
         if uri in self.cache:
-            feed = feedparser.parse(uri, 
-                    modified=self.cache[uri].modified, 
-                    etag=self.cache[uri].etag
-                    )
+            if self.cache[uri].has_key('modified'):
+                mod = self.cache[uri].modified
+            else:
+                mod = None
+            
+            if self.cache[uri].has_key('etag'):
+                etag = self.cache[uri].etag
+            else:
+                etag = None
+
+            feed = feedparser.parse(uri, modified=mod, etag=etag)
+
             if feed.status == 304:
                 return True
 
