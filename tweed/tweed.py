@@ -16,7 +16,8 @@ class Tweed:
         self.log = logging.getLogger('tweed')
 
     def close_friend_gap(self):
-        '''Make sure Tweed follows everyone that follows Tweed'''
+        '''Make sure Tweed follows everyone that follows Tweed
+        Todo: 1. save on API calls by caching # of followers.'''
         try:
             twit_followers = self.twitter.GetFollowers()
             friends = set([i.id for i in self.twitter.GetFriends()])
@@ -66,6 +67,6 @@ class Tweed:
                 title = " from \"%s\"" % (feed_title)
 
             message = "new post%s: %s \"%s\"" % (title, url, i.title)[0:140]
-            #self.twitter.PostDirectMessage(user_id, message)
+            self.twitter.PostDirectMessage(user_id, message)
 
 
